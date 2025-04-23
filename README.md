@@ -26,6 +26,39 @@ This project implements an end-to-end data ingestion pipeline using Kafka, Pytho
     └── analytics.sql
 ```
 
+## Data Model Design
+
+### Dimension/Fact Design
+
+The project implements a star schema design with three dimension tables (DIM_CUSTOMER, DIM_PRODUCT, DIM_DATE) and one fact table (FACT_ORDERS). This design was chosen for several reasons:
+
+1. **Clear Separation**: The star schema provides a clear separation between descriptive attributes (dimensions) and measurable events (facts), making it easier to analyze business metrics and perform complex queries.
+
+2. **Denormalized Dimensions**: The dimension tables are designed to be denormalized, which improves query performance by reducing the number of joins needed. For example, the DIM_PRODUCT table includes both product_name and category, allowing for quick filtering and grouping without additional joins.
+
+3. **Time-Based Analysis**: The DIM_DATE dimension is particularly useful for time-based analysis, enabling easy aggregation by year, month, quarter, or day. The inclusion of flags like is_weekend and is_holiday allows for special time period analysis.
+
+4. **Centralized Metrics**: The fact table (FACT_ORDERS) serves as the central point for all order-related metrics, with foreign keys to all dimension tables. This design allows for comprehensive analysis of orders across different dimensions (customer, product, time) while maintaining data integrity through referential constraints.
+
+### Slowly Changing Dimensions (SCD)
+
+The project implements different approaches to handle slowly changing dimensions:
+
+1. **Type 1 SCD (Overwrite)**: The current implementation uses Type 1 SCD for most attributes, where changes simply overwrite the existing values. This is evident in the DIM_CUSTOMER and DIM_PRODUCT tables, which have updated_at timestamps but don't maintain historical values.
+
+2. **Type 2 SCD (Historical Tracking)**: To implement Type 2 SCD, we would need to:
+   - Add effective_date and end_date columns to track when each version was valid
+   - Add a version number or surrogate key to distinguish between different versions
+   - Create a new record when an attribute changes instead of updating the existing one
+   - Update the end_date of the previous version when a new version is created
+
+3. **Type 3 SCD (Limited History)**: For attributes where we need to track both current and previous values, we could add columns like previous_value and previous_value_date.
+
+4. **Hybrid Approach**: We could implement different SCD types for different attributes based on business requirements. For example:
+   - Use Type 1 for attributes that don't need historical tracking (e.g., customer_name)
+   - Use Type 2 for attributes that need full historical tracking (e.g., customer_region)
+   - Use Type 3 for attributes where we only need to know the previous value (e.g., product_price)
+
 ## Setup Instructions
 
 ### 1. Prerequisites
