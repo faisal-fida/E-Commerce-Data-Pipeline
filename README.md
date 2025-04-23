@@ -11,9 +11,6 @@ This project implements an end-to-end data ingestion pipeline using Kafka, Pytho
 ├── .env
 ├── Dockerfile
 ├── docker-compose.yml
-├── .github/
-│   └── workflows/
-│       └── ci-cd.yml
 ├── src/
 │   ├── producer.py
 │   ├── consumer.py
