@@ -3,3 +3,5 @@ snowflake-connector-python
 python-dotenv
 pandas
 numpy
+sqlalchemy
+snowflake-sqlalchemy

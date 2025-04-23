@@ -18,6 +18,7 @@ CUSTOMERS = [
     {"id": "C005", "name": "Usman Khan", "region": "Punjab"},
 ]
 
+
 PRODUCTS = [
     {"id": "P001", "name": "Wireless Mouse", "category": "Accessories", "price": 2500},
     {"id": "P002", "name": "Mechanical Keyboard", "category": "Accessories", "price": 5000},

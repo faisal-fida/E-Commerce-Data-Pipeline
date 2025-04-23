@@ -18,15 +18,10 @@ ENV PYTHONUNBUFFERED=1
 FROM base AS producer
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python src/health_check.py
-    
 CMD ["python", "src/producer.py"]
 
 # Consumer stage with DB setup
 FROM base AS consumer
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python src/health_check.py
-
-# Script to run setup and then start consumer
-COPY entrypoint.sh /app/
-RUN chmod +x /app/entrypoint.sh
-CMD ["/app/entrypoint.sh"]
+CMD ["python", "src/consumer.py"]
