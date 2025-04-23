@@ -19,8 +19,10 @@ class SnowflakeAnalytics:
             d.month,
             p.category,
             c.customer_region,
+            COUNT(DISTINCT f.order_id) as total_orders,
             SUM(f.quantity) as total_quantity,
-            SUM(f.total_amount) as total_sales
+            SUM(f.total_amount) as total_sales,
+            AVG(f.total_amount) as average_order_value
         FROM FACT_ORDERS f
         JOIN DIM_DATE d ON f.date_id = d.date_id
         JOIN DIM_PRODUCT p ON f.product_id = p.product_id
@@ -28,8 +30,11 @@ class SnowflakeAnalytics:
         """
         if year and month:
             query += f" WHERE d.year = {year} AND d.month = {month}"
+        else:
+            query += " WHERE d.year = EXTRACT(YEAR FROM CURRENT_DATE()) AND d.month = EXTRACT(MONTH FROM CURRENT_DATE())"
 
-        query += """ GROUP BY d.year, d.month, p.category, c.customer_region
+        query += """ 
+        GROUP BY d.year, d.month, p.category, c.customer_region
         ORDER BY d.year, d.month, p.category, c.customer_region"""
 
         return pd.read_sql(query, self.engine)
@@ -41,18 +46,24 @@ class SnowflakeAnalytics:
             SELECT 
                 c.customer_id,
                 c.customer_name,
-                COUNT(*) as order_count
+                c.customer_region,
+                COUNT(DISTINCT f.order_id) as order_count,
+                SUM(f.total_amount) as total_spent,
+                AVG(f.total_amount) as average_order_value
             FROM FACT_ORDERS f
             JOIN DIM_CUSTOMER c ON f.customer_id = c.customer_id
             WHERE f.order_timestamp >= DATEADD(day, %(days)s, CURRENT_TIMESTAMP())
-            GROUP BY c.customer_id, c.customer_name
+            GROUP BY c.customer_id, c.customer_name, c.customer_region
         )
         SELECT 
             customer_id,
             customer_name,
-            order_count
+            customer_region,
+            order_count,
+            total_spent,
+            average_order_value
         FROM customer_orders
-        ORDER BY order_count DESC
+        ORDER BY order_count DESC, total_spent DESC
         LIMIT 5
         """
         return pd.read_sql(query, self.engine, params={"days": -days})
