@@ -1,0 +1,5 @@
+confluent-kafka
+snowflake-connector-python
+python-dotenv
+pandas
+numpy
