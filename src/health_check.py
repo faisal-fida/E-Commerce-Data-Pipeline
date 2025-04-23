@@ -5,7 +5,6 @@ from confluent_kafka import Consumer
 import sys
 import os
 
-# Add parent directory to path to import config
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import SNOWFLAKE_CONFIG, KAFKA_CONFIG
 from logger import setup_logger

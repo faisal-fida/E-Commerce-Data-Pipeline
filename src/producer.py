@@ -1,12 +1,11 @@
 import json
 import random
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 from confluent_kafka import Producer
 import sys
 import os
 
-# Add parent directory to path to import config
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import KAFKA_CONFIG
 
@@ -57,27 +56,16 @@ def delivery_report(err, msg):
 
 
 def main():
-    # Configure producer
-    producer = Producer(KAFKA_CONFIG)
+    producer = Producer({"bootstrap.servers": KAFKA_CONFIG["bootstrap.servers"]})
 
-    # Generate and send 100 orders
     for i in range(100):
         order = generate_order()
-
-        # Convert order to JSON string
         order_json = json.dumps(order)
-
-        # Send message to Kafka
         producer.produce("orders", order_json.encode("utf-8"), callback=delivery_report)
-
-        # Flush messages
-        producer.poll(0)
-
-        # Add delay between messages
+        producer.poll(0)  # Flush messages
         time.sleep(1)
 
-    # Wait for any outstanding messages to be delivered
-    producer.flush()
+    producer.flush()  # Wait for any outstanding messages to be delivered
 
 
 if __name__ == "__main__":

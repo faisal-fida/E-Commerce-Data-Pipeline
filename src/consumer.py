@@ -1,12 +1,10 @@
 import json
-import time
 from datetime import datetime
 from confluent_kafka import Consumer, KafkaError
 import snowflake.connector
 import sys
 import os
 
-# Add parent directory to path to import config
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import KAFKA_CONFIG, SNOWFLAKE_CONFIG
 
@@ -28,24 +26,34 @@ def insert_dimension_data(conn, table_name, data):
 
     if table_name == "DIM_CUSTOMER":
         query = """
-        INSERT INTO DIM_CUSTOMER (customer_id, customer_name, customer_region)
-        VALUES (%s, %s, %s)
-        ON CONFLICT (customer_id) DO UPDATE
-        SET customer_name = EXCLUDED.customer_name,
-            customer_region = EXCLUDED.customer_region,
-            updated_at = CURRENT_TIMESTAMP()
+        MERGE INTO DIM_CUSTOMER target
+        USING (SELECT %s as customer_id, %s as customer_name, %s as customer_region) source
+        ON target.customer_id = source.customer_id
+        WHEN MATCHED THEN
+            UPDATE SET 
+                customer_name = source.customer_name,
+                customer_region = source.customer_region,
+                updated_at = CURRENT_TIMESTAMP()
+        WHEN NOT MATCHED THEN
+            INSERT (customer_id, customer_name, customer_region)
+            VALUES (source.customer_id, source.customer_name, source.customer_region)
         """
         values = (data["customer_id"], data["customer_name"], data["customer_region"])
 
     elif table_name == "DIM_PRODUCT":
         query = """
-        INSERT INTO DIM_PRODUCT (product_id, product_name, category, price)
-        VALUES (%s, %s, %s, %s)
-        ON CONFLICT (product_id) DO UPDATE
-        SET product_name = EXCLUDED.product_name,
-            category = EXCLUDED.category,
-            price = EXCLUDED.price,
-            updated_at = CURRENT_TIMESTAMP()
+        MERGE INTO DIM_PRODUCT target
+        USING (SELECT %s as product_id, %s as product_name, %s as category, %s as price) source
+        ON target.product_id = source.product_id
+        WHEN MATCHED THEN
+            UPDATE SET 
+                product_name = source.product_name,
+                category = source.category,
+                price = source.price,
+                updated_at = CURRENT_TIMESTAMP()
+        WHEN NOT MATCHED THEN
+            INSERT (product_id, product_name, category, price)
+            VALUES (source.product_id, source.product_name, source.category, source.price)
         """
         values = (data["product_id"], data["product_name"], data["category"], data["price"])
 
@@ -87,10 +95,8 @@ def insert_fact_data(conn, order_data):
 def process_message(msg, conn):
     """Process a Kafka message and load it into Snowflake."""
     try:
-        # Parse message
         order_data = json.loads(msg.value().decode("utf-8"))
 
-        # Insert dimension data
         customer_data = {
             "customer_id": order_data["customer_id"],
             "customer_name": order_data["customer_name"],
@@ -106,7 +112,6 @@ def process_message(msg, conn):
         }
         insert_dimension_data(conn, "DIM_PRODUCT", product_data)
 
-        # Insert fact data
         insert_fact_data(conn, order_data)
 
         print(f"Successfully processed order {order_data['order_id']}")
@@ -116,7 +121,6 @@ def process_message(msg, conn):
 
 
 def main():
-    # Configure consumer
     consumer = Consumer(
         {
             "bootstrap.servers": KAFKA_CONFIG["bootstrap.servers"],
@@ -125,10 +129,8 @@ def main():
         }
     )
 
-    # Subscribe to topic
     consumer.subscribe(["orders"])
 
-    # Get Snowflake connection
     conn = get_snowflake_connection()
 
     try:

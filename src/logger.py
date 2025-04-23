@@ -9,17 +9,13 @@ def setup_logger(name, log_file=None, level=logging.INFO):
     logger = logging.getLogger(name)
     logger.setLevel(level)
 
-    # Create formatters
     formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
-    # Console handler
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
 
-    # File handler (if log_file is provided)
     if log_file:
-        # Create logs directory if it doesn't exist
         os.makedirs("logs", exist_ok=True)
         file_handler = RotatingFileHandler(
             f"logs/{log_file}",
