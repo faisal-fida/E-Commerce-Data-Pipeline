@@ -52,13 +52,12 @@ CREATE TABLE IF NOT EXISTS FACT_ORDERS (
 CREATE STREAM IF NOT EXISTS ORDERS_STREAM ON TABLE FACT_ORDERS;
 
 -- Create a task to populate the date dimension
-CREATE OR REPLACE TASK POPULATE_DATE_DIM
-    WAREHOUSE = COMPUTE_WH
-    SCHEDULE = 'USING CRON 0 0 * * * UTC'
-AS
-    INSERT INTO DIM_DATE
+create or replace task E_COMMERCE.E_COMMERCE.POPULATE_DATE_DIM
+    warehouse=COMPUTE_WH
+    schedule='1 MINUTE'
+    as INSERT INTO DIM_DATE
     SELECT 
-        date_value,
+        DATEADD(day, SEQ4(), CURRENT_DATE()) as date_value,
         YEAR(date_value),
         MONTH(date_value),
         DAY(date_value),
@@ -66,4 +65,4 @@ AS
         DAYOFWEEK(date_value) IN (1, 7),
         FALSE -- You can add holiday logic here
     FROM TABLE(GENERATOR(ROWCOUNT => 365))
-    WHERE date_value NOT IN (SELECT date_id FROM DIM_DATE); 
+    WHERE date_value NOT IN (SELECT date_id FROM DIM_DATE);

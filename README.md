@@ -19,7 +19,6 @@ This project implements an end-to-end data ingestion pipeline using Kafka, Pytho
 │   ├── consumer.py
 │   ├── config.py
 │   ├── logger.py
-│   ├── config_validator.py
 │   └── health_check.py
 └── sql/
     ├── schema.sql
